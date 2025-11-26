@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Histórico</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+  </div>
+
+  <form method="post" class="row g-3 mb-4">
+    <div class="col-md-3"><input class="form-control" name="placa" placeholder="Placa"></div>
+    <div class="col-md-3"><input class="form-control" name="data_ini" placeholder="Data início (dd/mm/yyyy)"></div>
+    <div class="col-md-3"><input class="form-control" name="data_fim" placeholder="Data fim (dd/mm/yyyy)"></div>
+    <div class="col-md-3"><button class="btn btn-primary">Filtrar</button></div>
+  </form>
+
+  <div class="list-group">
+    {% for r in resultados %}
+      <a href="{{ url_for('detalhes', veiculo_id=r.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold">{{ r.placa or '-' }} • {{ r.modelo or '-' }}</div>
+          <div class="small text-muted">{{ r.condutor or '-' }} • {{ r.data or '-' }}</div>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-secondary">{{ r.tipo or '-' }}</span>
+        </div>
+      </a>
+    {% else %}
+      <div class="text-center text-muted py-4">Nenhum registro encontrado.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

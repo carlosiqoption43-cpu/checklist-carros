@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-wrapper">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Painel de Controle</h1>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('index') }}" class="btn btn-lg btn-success btn-gradient shadow-sm"><i class="bi bi-plus-circle me-2"></i> Novo Checklist</a>
+      <a href="{{ url_for('historico') }}" class="btn btn-lg btn-outline-primary shadow-sm"><i class="bi bi-search me-2"></i> Consultar Veículo</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-3">
+      <button class="kpi-card card h-100 shadow-sm btn-card" data-tipo="" data-criticos="0">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon bg-soft-primary text-primary"><i class="bi bi-clipboard-check"></i></div>
+            <div>
+              <div class="kpi-label">Total Checklists</div>
+              <div class="kpi-value">{{ total_checklists }}</div>
+            </div>
+          </div>
+          <div class="kpi-foot text-muted small">Últimos registros</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <button class="kpi-card card h-100 shadow-sm btn-card" data-tipo="Carro" data-criticos="0">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon bg-soft-success text-success"><i class="bi bi-car-front-fill"></i></div>
+            <div>
+              <div class="kpi-label">Carros</div>
+              <div class="kpi-value">{{ total_carros }}</div>
+            </div>
+          </div>
+          <div class="kpi-foot text-muted small">Proporção de frota</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <button class="kpi-card card h-100 shadow-sm btn-card" data-tipo="Moto" data-criticos="0">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon bg-soft-info text-info"><i class="bi bi-bicycle"></i></div>
+            <div>
+              <div class="kpi-label">Motos</div>
+              <div class="kpi-value">{{ total_motos }}</div>
+            </div>
+          </div>
+          <div class="kpi-foot text-muted small">Proporção de frota</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="col-sm-6 col-md-3">
+      <button class="kpi-card card h-100 shadow-sm btn-card" data-tipo="" data-criticos="1">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <div class="kpi-icon bg-soft-danger text-danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div>
+              <div class="kpi-label">Itens Críticos</div>
+              <div class="kpi-value">{{ total_criticos }}</div>
+            </div>
+          </div>
+          <div class="kpi-foot text-muted small">Atenção imediata</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header">Distribuição Carro vs Moto</div>
+        <div class="card-body"><canvas id="graficoTipos"></canvas></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header">Checklists por mês</div>
+        <div class="card-body"><canvas id="graficoMeses"></canvas></div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header">Top 5 Itens Críticos</div>
+        <div class="card-body"><canvas id="graficoCriticos"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal com busca e paginação -->
+<div class="modal fade" id="modalLista" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Registros</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 d-flex gap-2">
+          <input id="modalSearch" class="form-control" placeholder="Buscar por placa, condutor ou modelo">
+          <select id="modalPerPage" class="form-select w-auto">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+
+        <div id="modalLoading" class="text-center py-4">Carregando...</div>
+        <div id="modalContent" style="display:none;">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped" id="tableRegistros">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Tipo</th><th>Placa</th><th>Condutor</th><th>Modelo</th><th>KM</th><th>Data</th><th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <nav aria-label="Paginação">
+            <ul class="pagination justify-content-center mt-3" id="modalPagination"></ul>
+          </nav>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  new Chart(document.getElementById('graficoTipos'), {
+    type: 'doughnut',
+    data: { labels: ['Carros','Motos'], datasets: [{ data: [{{ total_carros }}, {{ total_motos }}], backgroundColor: ['#198754','#0dcaf0'] }] },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+
+  const ctx = document.getElementById('graficoMeses').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,300);
+  grad.addColorStop(0, 'rgba(13,110,253,0.35)');
+  grad.addColorStop(1, 'rgba(13,110,253,0.05)');
+  new Chart(ctx, {
+    type: 'line',
+    data: { labels: {{ meses_labels|safe }}, datasets: [{ label: 'Checklists', data: {{ meses_data|safe }}, borderColor: '#0d6efd', backgroundColor: grad, fill: true, tension: 0.35 }] },
+    options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('graficoCriticos'), {
+    type: 'bar',
+    data: { labels: {{ criticos_labels|safe }}, datasets: [{ label: 'Ocorrências', data: {{ criticos_data|safe }}, backgroundColor: '#dc3545' }] },
+    options: { indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+  });
+
+  // Paginação modal
+  function renderPagination(container, page, total_pages) {
+    container.innerHTML = '';
+    const createLi = (p, label, disabled=false, active=false) => {
+      const li = document.createElement('li');
+      li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+      const a = document.createElement('a');
+      a.className = 'page-link';
+      a.href = '#';
+      a.dataset.page = p;
+      a.textContent = label;
+      li.appendChild(a);
+      return li;
+    };
+    container.appendChild(createLi(Math.max(1, page-1), '«', page<=1));
+    const windowSize = 5;
+    let start = Math.max(1, page - Math.floor(windowSize/2));
+    let end = Math.min(total_pages, start + windowSize - 1);
+    if (end - start < windowSize - 1) start = Math.max(1, end - windowSize + 1);
+    for (let p = start; p <= end; p++) {
+      container.appendChild(createLi(p, p, false, p===page));
+    }
+    container.appendChild(createLi(Math.min(total_pages, page+1), '»', page>=total_pages));
+  }
+
+  document.querySelectorAll('.btn-card').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tipo = btn.dataset.tipo || '';
+      const criticos = btn.dataset.criticos || '0';
+      const modalEl = document.getElementById('modalLista');
+      const modal = new bootstrap.Modal(modalEl);
+      const title = tipo ? `Registros: ${tipo}` : (criticos === '1' ? 'Registros Críticos' : 'Registros');
+      document.getElementById('modalTitle').textContent = title;
+
+      const loading = document.getElementById('modalLoading');
+      const content = document.getElementById('modalContent');
+      const tbody = document.querySelector('#tableRegistros tbody');
+      const pagination = document.getElementById('modalPagination');
+      const searchInput = document.getElementById('modalSearch');
+      const perPageSelect = document.getElementById('modalPerPage');
+
+      let currentPage = 1;
+
+      async function loadPage(page=1) {
+        loading.style.display = 'block';
+        content.style.display = 'none';
+        tbody.innerHTML = '';
+        pagination.innerHTML = '';
+
+        const q = searchInput.value.trim();
+        const per_page = perPageSelect.value;
+        let url = `/api/veiculos?page=${page}&per_page=${per_page}`;
+        if (tipo) url += `&tipo=${encodeURIComponent(tipo)}`;
+        if (criticos === '1') url += `&criticos=1`;
+        if (q) url += `&q=${encodeURIComponent(q)}`;
+
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error('Erro ao buscar registros');
+          const data = await resp.json();
+          if (!data.items || data.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum registro encontrado.</td></tr>';
+          } else {
+            tbody.innerHTML = data.items.map(r => `
+              <tr>
+                <td>${r.id}</td>
+                <td>${r.tipo || '-'}</td>
+                <td>${r.placa || '-'}</td>
+                <td>${r.condutor || '-'}</td>
+                <td>${r.modelo || '-'}</td>
+                <td>${r.quilometragem || '-'}</td>
+                <td>${r.data || '-'}</td>
+                <td><a class="btn btn-sm btn-outline-primary" href="/detalhes/${r.id}"><i class="bi bi-eye"></i> Ver</a></td>
+              </tr>
+            `).join('');
+          }
+
+          renderPagination(pagination, data.page || 1, data.total_pages || 1);
+          pagination.querySelectorAll('a.page-link').forEach(a => {
+            a.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              const p = parseInt(a.dataset.page, 10) || 1;
+              loadPage(p);
+            });
+          });
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center">Erro ao carregar: ${err.message}</td></tr>`;
+        } finally {
+          loading.style.display = 'none';
+          content.style.display = 'block';
+        }
+      }
+
+      searchInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); loadPage(1); } };
+      perPageSelect.onchange = () => loadPage(1);
+
+      modal.show();
+      loadPage(1);
+    });
+  });
+</script>
+{% endblock %}

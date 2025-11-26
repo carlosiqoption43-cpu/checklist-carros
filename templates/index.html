@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Novo Checklist</h2>
+    <div><a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a></div>
+  </div>
+
+  <form action="{{ url_for('salvar') }}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3"><label class="form-label">Tipo</label><select class="form-select" name="tipo" required><option value="Carro">Carro</option><option value="Moto">Moto</option></select></div>
+          <div class="col-md-3"><label class="form-label">Condutor</label><input class="form-control" name="condutor" required></div>
+          <div class="col-md-3"><label class="form-label">Placa</label><input class="form-control" name="placa" placeholder="AAA-1234" required></div>
+          <div class="col-md-3"><label class="form-label">Quilometragem</label><input class="form-control" name="quilometragem"></div>
+          <div class="col-md-6"><label class="form-label">Modelo</label><input class="form-control" name="modelo"></div>
+          <div class="col-md-6"><label class="form-label">Foto do veículo</label><input type="file" class="form-control" name="foto_carro" accept="image/*"></div>
+          <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      {% for item in itens_carro %}
+      <div class="col-md-6">
+        <div class="card item-card shadow-sm">
+          <div class="card-body d-flex gap-3 align-items-start">
+            <div class="flex-shrink-0">
+              <div class="item-icon bg-light rounded-circle d-flex align-items-center justify-content-center"><i class="bi bi-gear"></i></div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between align-items-start">
+                <h6 class="mb-1">{{ item }}</h6>
+                <select class="form-select form-select-sm w-auto" name="status_{{ loop.index }}">
+                  <option>OK</option><option>Danificado</option><option>Desgastado</option>
+                </select>
+              </div>
+              <div class="mt-2 d-flex gap-2">
+                <input class="form-control form-control-sm" name="coment_{{ loop.index }}" placeholder="Comentário (opcional)">
+                <input type="file" class="form-control form-control-sm w-50" name="foto_{{ loop.index }}" accept="image/*">
+                <input type="hidden" name="itemname_{{ loop.index }}" value="{{ item }}">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-lg btn-primary btn-gradient"><i class="bi bi-save me-2"></i> Salvar Checklist</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function () {
+    'use strict'
+    const forms = document.querySelectorAll('.needs-validation')
+    Array.from(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        form.classList.add('was-validated')
+      }, false)
+    })
+  })()
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">Detalhes do Checklist</h2>
+    <div>
+      <a href="{{ url_for('pdf', veiculo_id=reg.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</a>
+      <a href="{{ url_for('historico') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+    </div>
+  </div>
+
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4"><strong>Placa:</strong> {{ reg.placa or '-' }}</div>
+        <div class="col-md-4"><strong>Condutor:</strong> {{ reg.condutor or '-' }}</div>
+        <div class="col-md-4"><strong>Data:</strong> {{ reg.data or '-' }}</div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-md-4"><strong>Modelo:</strong> {{ reg.modelo or '-' }}</div>
+        <div class="col-md-4"><strong>KM:</strong> {{ reg.quilometragem or '-' }}</div>
+        <div class="col-md-4"><strong>Tipo:</strong> <span class="badge bg-info">{{ reg.tipo }}</span></div>
+      </div>
+      <div class="mt-3"><strong>Observações:</strong><div class="mt-1">{{ reg.observacoes or '-' }}</div></div>
+
+      {% if reg.foto_carro %}
+        <div class="mt-3">
+          <img src="{{ url_for('uploads', filename=reg.foto_carro) }}" class="img-fluid rounded" alt="foto do veículo">
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for it in reg.itens %}
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div><strong>{{ it.nome_item }}</strong></div>
+            <div>
+              {% if it.status == 'OK' %}
+                <span class="badge bg-success">{{ it.status }}</span>
+              {% elif it.status == 'Danificado' %}
+                <span class="badge bg-danger">{{ it.status }}</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">{{ it.status }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="mt-2 small text-muted">{{ it.comentario or '-' }}</div>
+          {% if it.caminho_thumb %}
+            <div class="mt-3"><img src="{{ url_for('uploads', filename=it.caminho_thumb) }}" class="img-fluid rounded" alt="foto"></div>
+          {% elif it.caminho_foto %}
+            <div class="mt-3"><img src="{{ url_for('uploads', filename=it.caminho_foto) }}" class="img-fluid rounded" alt="foto"></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
