@@ -15,14 +15,14 @@ ITENS_CARRO = [
     "Lanterna Esq.", "Lanterna Dir.", "Luz de ré", "Luz de freio",
     "Retrovisor Esq.", "Retrovisor Dir.", "Pneus Dianteiros", "Pneus Traseiros",
     "Estepe", "Triângulo", "Macaco", "Chave de roda", "Limpador de para-brisa",
-    "Vidros", "Lataria", "Interior", "Fluido de freio"
+    "Vidros", "Lataria", "Interior", "Fluido de freio", "Água do Carro"
 ]
 
 ITENS_MOTO = [
     "Farol", "Pisca Esq.", "Pisca Dir.", "Lanterna", "Luz de freio",
     "Retrovisor Esq.", "Retrovisor Dir.", "Pneus Dianteiros", "Pneus Traseiros",
     "Estepe (se aplicável)", "Triângulo (se aplicável)", "Macaco (se aplicável)",
-    "Limpador de para-brisa", "Vidros", "Lataria", "Interior", "Fluido de freio"
+    "Limpador de para-brisa", "Vidros", "Lataria", "Interior", "Fluido de freio", "Água do Carro"
 ]
 
 ALLOWED_EXT = {"png", "jpg", "jpeg", "gif", "webp"}
@@ -89,6 +89,18 @@ def salvar_checklist(form, files):
     placa = form.get("placa")
     modelo = form.get("modelo")
     quilometragem = form.get("quilometragem")
+    # campos novos para troca de óleo
+    oleo_data = form.get("oleo_data")
+    oleo_km = form.get("oleo_km")
+    # Sanitiza oleo_km para armazenar apenas dígitos (evita letras e formatações)
+    def _digits_only(v):
+        try:
+            s = str(v or "").strip()
+            nums = ''.join(ch for ch in s if ch.isdigit())
+            return nums if nums else None
+        except Exception:
+            return None
+    oleo_km = _digits_only(oleo_km)
     observacoes = form.get("observacoes")
     data = datetime.now().strftime("%d/%m/%Y %H:%M")
 
@@ -96,9 +108,9 @@ def salvar_checklist(form, files):
     foto_carro_name, foto_thumb = _save_file_storage(foto_carro_file, prefix="veic")
 
     cur.execute("""
-        INSERT INTO veiculos (condutor, placa, modelo, data, quilometragem, observacoes, foto_carro, tipo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (condutor, placa, modelo, data, quilometragem, observacoes, foto_carro_name, tipo))
+        INSERT INTO veiculos (condutor, placa, modelo, data, quilometragem, observacoes, foto_carro, tipo, oleo_data, oleo_km)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (condutor, placa, modelo, data, quilometragem, observacoes, foto_carro_name, tipo, oleo_data, oleo_km))
     veic_id = cur.lastrowid
 
     # percorre status_*
@@ -162,6 +174,31 @@ def obter_registro(veiculo_id):
     conn.close()
     reg = dict(v)
     reg["itens"] = [dict(i) for i in itens]
+    # Cálculo simples para alerta de troca de óleo (6.000 km)
+    def _to_int(val):
+        try:
+            s = str(val or "")
+            nums = ''.join(ch for ch in s if ch.isdigit())
+            return int(nums) if nums else None
+        except Exception:
+            return None
+
+    try:
+        km_atual = _to_int(reg.get('quilometragem'))
+        km_oleo = _to_int(reg.get('oleo_km'))
+        if km_atual is not None and km_oleo is not None:
+            diff = km_atual - km_oleo
+            reg['oleo_diff'] = diff
+            reg['oleo_due_in'] = max(0, 6000 - diff)
+            reg['oleo_alert'] = diff >= 6000
+        else:
+            reg['oleo_diff'] = None
+            reg['oleo_due_in'] = None
+            reg['oleo_alert'] = False
+    except Exception:
+        reg['oleo_diff'] = None
+        reg['oleo_due_in'] = None
+        reg['oleo_alert'] = False
     return reg
 
 

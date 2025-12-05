@@ -42,3 +42,21 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_itens_status ON itens_checklist(status)")
     conn.commit()
     conn.close()
+
+    # Adiciona colunas para controle de troca de óleo caso não existam (migrations simples)
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(veiculos)")
+    cols = [row[1] for row in cur.fetchall()]
+    if 'oleo_data' not in cols:
+        try:
+            cur.execute("ALTER TABLE veiculos ADD COLUMN oleo_data TEXT")
+        except Exception:
+            pass
+    if 'oleo_km' not in cols:
+        try:
+            cur.execute("ALTER TABLE veiculos ADD COLUMN oleo_km TEXT")
+        except Exception:
+            pass
+    conn.commit()
+    conn.close()

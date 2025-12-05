@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <!-- Header -->
+      <div class="text-center mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center mb-3">
+          <div class="kpi-icon bg-soft-primary text-primary me-3">
+            <i class="bi bi-person-plus"></i>
+          </div>
+          <div>
+            <h1 class="h3 fw-bold mb-1">Novo Usuário</h1>
+            <p class="text-muted">Cadastrar novo usuário no sistema</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Form Card -->
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-4 p-lg-5">
+          <form method="POST" action="{{ url_for('auth.register') }}">
+            <div class="mb-4">
+              <label for="username" class="form-label fw-semibold">
+                <i class="bi bi-person me-2"></i>Nome de Usuário
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-0">
+                  <i class="bi bi-person text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0" id="username" name="username" 
+                       required placeholder="Digite o nome de usuário">
+              </div>
+              <div class="form-text mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Escolha um nome de usuário único e fácil de lembrar.
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="email" class="form-label fw-semibold">
+                <i class="bi bi-envelope me-2"></i>E-mail
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-0">
+                  <i class="bi bi-envelope text-muted"></i>
+                </span>
+                <input type="email" class="form-control border-start-0" id="email" name="email" 
+                       placeholder="usuario@exemplo.com">
+              </div>
+              <div class="form-text mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                O e-mail é opcional e será usado para recuperação de senha.
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="password" class="form-label fw-semibold">
+                <i class="bi bi-lock me-2"></i>Senha
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-0">
+                  <i class="bi bi-lock text-muted"></i>
+                </span>
+                <input type="password" class="form-control border-start-0" id="password" name="password" 
+                       required placeholder="Digite uma senha segura">
+                <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              <div class="form-text mt-2">
+                <i class="bi bi-shield-check me-1"></i>
+                A senha deve ter pelo menos 6 caracteres.
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="confirm_password" class="form-label fw-semibold">
+                <i class="bi bi-lock-fill me-2"></i>Confirmar Senha
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-0">
+                  <i class="bi bi-lock-fill text-muted"></i>
+                </span>
+                <input type="password" class="form-control border-start-0" id="confirm_password" name="confirm_password" 
+                       required placeholder="Confirme a senha">
+                <button class="btn btn-outline-secondary border-start-0" type="button" id="toggleConfirmPassword">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <div class="card bg-light border-0">
+                <div class="card-body">
+                  <div class="form-check form-switch">
+                    <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin">
+                    <label class="form-check-label fw-semibold" for="is_admin">
+                      <i class="bi bi-shield-check me-2"></i>Usuário Administrador
+                    </label>
+                  </div>
+                  <div class="form-text mt-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Usuários administradores podem criar novos usuários e acessar todas as funcionalidades do sistema.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+              <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Cancelar
+              </a>
+              <button type="submit" class="btn btn-lg btn-gradient shadow">
+                <i class="bi bi-person-plus me-2"></i>Cadastrar Usuário
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card {
+    border-radius: 20px;
+  }
+  
+  .input-group-text {
+    border-radius: 12px 0 0 12px;
+  }
+  
+  .form-control {
+    border-radius: 0 12px 12px 0;
+  }
+  
+  .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--primary-500);
+  }
+  
+  .btn-gradient {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  }
+  
+  .border-top {
+    border-color: #e2e8f0 !important;
+  }
+  
+  .form-check-input:checked {
+    background-color: var(--primary-500);
+    border-color: var(--primary-500);
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const togglePassword = document.getElementById('togglePassword');
+  const passwordInput = document.getElementById('password');
+  const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+  const confirmPasswordInput = document.getElementById('confirm_password');
+  
+  togglePassword.addEventListener('click', function() {
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    
+    const icon = this.querySelector('i');
+    icon.classList.toggle('bi-eye');
+    icon.classList.toggle('bi-eye-slash');
+  });
+  
+  toggleConfirmPassword.addEventListener('click', function() {
+    const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    confirmPasswordInput.setAttribute('type', type);
+    
+    const icon = this.querySelector('i');
+    icon.classList.toggle('bi-eye');
+    icon.classList.toggle('bi-eye-slash');
+  });
+  
+  // Validação de senhas
+  const form = document.querySelector('form');
+  form.addEventListener('submit', function(e) {
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+    
+    if (password !== confirmPassword) {
+      e.preventDefault();
+      alert('As senhas não coincidem. Por favor, verifique.');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      e.preventDefault();
+      alert('A senha deve ter pelo menos 6 caracteres.');
+      return false;
+    }
+  });
+});
+</script>
+{% endblock %}

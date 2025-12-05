@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-plus-circle"></i> Nova Manutenção
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle"></i>
+            <strong>Veículo:</strong> {{ veiculo.placa }} - {{ veiculo.modelo }} ({{ veiculo.condutor }})
+          </div>
+
+          <form method="POST" action="{{ url_for('nova_manutencao', veiculo_id=veiculo.id) }}">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="nome_peca" class="form-label">Peça/Serviço *</label>
+                <input type="text" class="form-control" id="nome_peca" name="nome_peca" required
+                       placeholder="Ex: Troca de óleo, Pastilha de freio, etc.">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="data_manutencao" class="form-label">Data da Manutenção *</label>
+                <input type="date" class="form-control" id="data_manutencao" name="data_manutencao" required>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="quilometragem_atual" class="form-label">Quilometragem Atual *</label>
+                <input type="number" class="form-control" id="quilometragem_atual" name="quilometragem_atual" required
+                       placeholder="Ex: 50000">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="vida_util_km" class="form-label">Vida Útil da Peça (km)</label>
+                <input type="number" class="form-control" id="vida_util_km" name="vida_util_km"
+                       placeholder="Ex: 10000 (km até próxima troca)">
+                <div class="form-text">Informe a vida útil esperada da peça em quilômetros</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="proxima_manutencao_km" class="form-label">Próxima Manutenção (km)</label>
+                <input type="number" class="form-control" id="proxima_manutencao_km" name="proxima_manutencao_km"
+                       placeholder="Ex: 60000">
+                <div class="form-text">Quilometragem recomendada para próxima manutenção</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="valor_peca" class="form-label">Valor da Peça (R$)</label>
+                <input type="number" step="0.01" class="form-control" id="valor_peca" name="valor_peca"
+                       placeholder="Ex: 150.00">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="mao_de_obra" class="form-label">Mão de Obra (R$)</label>
+                <input type="number" step="0.01" class="form-control" id="mao_de_obra" name="mao_de_obra"
+                       placeholder="Ex: 80.00">
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="mt-4 pt-2">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="calcular_proxima" checked>
+                    <label class="form-check-label" for="calcular_proxima">
+                      Calcular próxima manutenção automaticamente
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="observacoes" class="form-label">Observações</label>
+              <textarea class="form-control" id="observacoes" name="observacoes" rows="3"
+                        placeholder="Informações adicionais sobre a manutenção..."></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="{{ url_for('manutencoes_veiculo', veiculo_id=veiculo.id) }}" 
+                 class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Salvar Manutenção
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const calcularProxima = document.getElementById('calcular_proxima');
+  const vidaUtilKm = document.getElementById('vida_util_km');
+  const quilometragemAtual = document.getElementById('quilometragem_atual');
+  const proximaManutencaoKm = document.getElementById('proxima_manutencao_km');
+  
+  function calcularProximaManutencao() {
+    if (calcularProxima.checked && vidaUtilKm.value && quilometragemAtual.value) {
+      const vidaUtil = parseFloat(vidaUtilKm.value);
+      const kmAtual = parseFloat(quilometragemAtual.value);
+      if (!isNaN(vidaUtil) && !isNaN(kmAtual)) {
+        proximaManutencaoKm.value = kmAtual + vidaUtil;
+      }
+    }
+  }
+  
+  calcularProxima.addEventListener('change', calcularProximaManutencao);
+  vidaUtilKm.addEventListener('input', calcularProximaManutencao);
+  quilometragemAtual.addEventListener('input', calcularProximaManutencao);
+  
+  // Definir data atual como padrão
+  const dataManutencao = document.getElementById('data_manutencao');
+  dataManutencao.valueAsDate = new Date();
+});
+</script>
+{% endblock %}

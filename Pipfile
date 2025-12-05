@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "==3.0.0"
+werkzeug = "==3.0.1"
+pillow = "==10.1.0"
+reportlab = "==4.2.0"
+gunicorn = "==21.2.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

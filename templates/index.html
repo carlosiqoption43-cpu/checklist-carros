@@ -15,7 +15,20 @@
           <div class="col-md-3"><label class="form-label">Placa</label><input class="form-control" name="placa" placeholder="AAA-1234" required></div>
           <div class="col-md-3"><label class="form-label">Quilometragem</label><input class="form-control" name="quilometragem"></div>
           <div class="col-md-6"><label class="form-label">Modelo</label><input class="form-control" name="modelo"></div>
-          <div class="col-md-6"><label class="form-label">Foto do veículo</label><input type="file" class="form-control" name="foto_carro" accept="image/*"></div>
+          <div class="col-md-3"><label class="form-label">Data última troca de óleo</label><input type="date" class="form-control" name="oleo_data"></div>
+          <div class="col-md-3"><label class="form-label">KM última troca de óleo</label>
+            <input type="number" min="0" step="1" inputmode="numeric" pattern="\d*" class="form-control" name="oleo_km" placeholder="Ex: 12300">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Foto do veículo</label>
+            <div class="input-group">
+              <label class="input-group-text btn btn-outline-secondary" for="foto_carro" style="cursor: pointer;">
+                <i class="bi bi-camera"></i> Escolher Foto
+              </label>
+              <input type="text" class="form-control" id="foto_carro_display" readonly placeholder="Nenhuma foto selecionada">
+              <input type="file" class="d-none" id="foto_carro" name="foto_carro" accept="image/*">
+            </div>
+          </div>
           <div class="col-12"><label class="form-label">Observações</label><textarea class="form-control" name="observacoes" rows="2"></textarea></div>
         </div>
       </div>
@@ -27,18 +40,36 @@
         <div class="card item-card shadow-sm">
           <div class="card-body d-flex gap-3 align-items-start">
             <div class="flex-shrink-0">
-              <div class="item-icon bg-light rounded-circle d-flex align-items-center justify-content-center"><i class="bi bi-gear"></i></div>
+              <div class="item-icon bg-light rounded-circle d-flex align-items-center justify-content-center">
+                {% if item == "Água do Carro" %}
+                  <i class="bi bi-droplet"></i>
+                {% else %}
+                  <i class="bi bi-gear"></i>
+                {% endif %}
+              </div>
             </div>
             <div class="flex-grow-1">
               <div class="d-flex justify-content-between align-items-start">
                 <h6 class="mb-1">{{ item }}</h6>
                 <select class="form-select form-select-sm w-auto" name="status_{{ loop.index }}">
-                  <option>OK</option><option>Danificado</option><option>Desgastado</option>
+                  {% if item == "Água do Carro" %}
+                    <option>Normal</option>
+                    <option>Baixo (precisa completar)</option>
+                    <option>Crítico (risco de falha ou falta)</option>
+                  {% else %}
+                    <option>OK</option><option>Danificado</option><option>Desgastado</option>
+                  {% endif %}
                 </select>
               </div>
               <div class="mt-2 d-flex gap-2">
-                <input class="form-control form-control-sm" name="coment_{{ loop.index }}" placeholder="Comentário (opcional)">
-                <input type="file" class="form-control form-control-sm w-50" name="foto_{{ loop.index }}" accept="image/*">
+                <input class="form-control form-control-sm" name="coment_{{ loop.index }}" 
+                       placeholder="{% if item == 'Água do Carro' %}Observações: vazamento, sujeira ou anomalia{% else %}Comentário (opcional){% endif %}">
+                <div class="input-group input-group-sm">
+                  <label class="input-group-text btn btn-outline-secondary" for="foto_{{ loop.index }}" style="cursor: pointer;">
+                    <i class="bi bi-camera"></i>
+                  </label>
+                  <input type="file" class="d-none" id="foto_{{ loop.index }}" name="foto_{{ loop.index }}" accept="image/*">
+                </div>
                 <input type="hidden" name="itemname_{{ loop.index }}" value="{{ item }}">
               </div>
             </div>
@@ -67,6 +98,20 @@
         form.classList.add('was-validated')
       }, false)
     })
+    
+    // Atualizar campo de exibição quando um arquivo for selecionado
+    const fotoCarro = document.getElementById('foto_carro');
+    const fotoCarroDisplay = document.getElementById('foto_carro_display');
+    
+    if (fotoCarro && fotoCarroDisplay) {
+      fotoCarro.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          fotoCarroDisplay.value = this.files[0].name;
+        } else {
+          fotoCarroDisplay.value = 'Nenhuma foto selecionada';
+        }
+      });
+    }
   })()
 </script>
 {% endblock %}

@@ -23,14 +23,38 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="bi bi-bar-chart-fill"></i> Dashboard</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint=='index' %}active{% endif %}" href="{{ url_for('index') }}"><i class="bi bi-journal-plus"></i> Novo Cadastro</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint=='historico' %}active{% endif %}" href="{{ url_for('historico') }}"><i class="bi bi-search"></i> Histórico</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint=='manutencao' %}active{% endif %}" href="{{ url_for('manutencao') }}"><i class="bi bi-tools"></i> Manutenções</a></li>
         </ul>
-        <div class="d-flex align-items-center gap-2">
-          <button id="toggleTheme" class="btn btn-outline-light btn-sm"><i class="bi bi-moon"></i> Dark</button>
-          <div class="d-none d-lg-flex gap-2">
-            <a href="{{ url_for('index') }}" class="btn btn-success btn-sm shadow-sm"><i class="bi bi-plus-circle"></i> Novo Checklist</a>
-            <a href="{{ url_for('historico') }}" class="btn btn-primary btn-sm shadow-sm"><i class="bi bi-search"></i> Consultar Veículo</a>
-          </div>
-        </div>
+        <ul class="navbar-nav ms-auto">
+          {% if current_user.is_authenticated %}
+            {% if current_user.is_admin %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.register') }}">
+                <i class="bi bi-person-plus"></i> Novo Usuário
+              </a>
+            </li>
+            {% endif %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle"></i> {{ current_user.username }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                  <i class="bi bi-box-arrow-right"></i> Sair
+                </a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.login') }}">
+                <i class="bi bi-box-arrow-in-right"></i> Entrar
+              </a>
+            </li>
+          {% endif %}
+          <li class="nav-item">
+            <button id="toggleTheme" class="btn btn-outline-light btn-sm ms-2"><i class="bi bi-moon"></i> Dark</button>
+          </li>
+        </ul>
       </div>
     </div>
   </nav>

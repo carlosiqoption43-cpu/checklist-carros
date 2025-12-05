@@ -4,8 +4,15 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="h4 mb-0">Detalhes do Checklist</h2>
     <div>
-      <a href="{{ url_for('pdf', veiculo_id=reg.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> Exportar PDF</a>
-      <a href="{{ url_for('historico') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      <a href="{{ url_for('manutencoes_veiculo', veiculo_id=reg.id) }}" class="btn btn-outline-success btn-sm me-2">
+        <i class="bi bi-tools"></i> Manutenções
+      </a>
+      <a href="{{ url_for('pdf', veiculo_id=reg.id) }}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+      </a>
+      <a href="{{ url_for('historico') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
     </div>
   </div>
 
@@ -21,6 +28,16 @@
         <div class="col-md-4"><strong>KM:</strong> {{ reg.quilometragem or '-' }}</div>
         <div class="col-md-4"><strong>Tipo:</strong> <span class="badge bg-info">{{ reg.tipo }}</span></div>
       </div>
+      {# Alerta de troca de óleo #}
+      {% if reg.oleo_km or reg.oleo_data %}
+        <div class="mt-3">
+          {% if reg.oleo_alert %}
+            <div class="alert alert-danger">Alerta: o veículo está com <strong>{{ reg.quilometragem or '-' }} km</strong>; última troca registrada em <strong>{{ reg.oleo_km or '-' }} km</strong> (data: {{ reg.oleo_data or '-' }}). Já se passaram {{ reg.oleo_diff or 'N/A' }} km desde a troca — é recomendada a troca do óleo.</div>
+          {% elif reg.oleo_due_in is not none %}
+            <div class="alert alert-warning">Próxima troca de óleo em <strong>{{ reg.oleo_due_in }} km</strong> (última: {{ reg.oleo_km or '-' }} km, data: {{ reg.oleo_data or '-' }}).</div>
+          {% endif %}
+        </div>
+      {% endif %}
       <div class="mt-3"><strong>Observações:</strong><div class="mt-1">{{ reg.observacoes or '-' }}</div></div>
 
       {% if reg.foto_carro %}

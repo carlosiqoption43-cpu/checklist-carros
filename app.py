@@ -1,9 +1,19 @@
 import os
 import math
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, send_from_directory
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from werkzeug.security import generate_password_hash
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 from db import init_db, get_conn
+from models import User, Manutencao
+from auth import auth_bp
 from services import (
     salvar_checklist,
     listar_historico,
@@ -13,13 +23,64 @@ from services import (
     ITENS_MOTO,
     limpar_arquivos_orfaos
 )
-from config import ANEXOS_DIR
+from config import ANEXOS_DIR, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_DEFAULT_SENDER, SECRET_KEY
 
 # Inicializa DB (cria tabelas e índices)
 init_db()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = os.environ.get("SECRET_KEY", "troque-esta-chave")
+
+# Configuração do Flask-Login
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Por favor, faça login para acessar esta página.'
+login_manager.login_message_category = 'warning'
+login_manager.init_app(app)
+
+# Configuração do envio de e-mail
+def send_email(subject, recipient, html_content):
+    if not MAIL_SERVER or not MAIL_USERNAME or not MAIL_PASSWORD:
+        print("Configuração de e-mail não encontrada. E-mail não enviado.")
+        print(f"Assunto: {subject}")
+        print(f"Para: {recipient}")
+        print(f"Conteúdo: {html_content}")
+        return False
+        
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = MAIL_DEFAULT_SENDER
+        msg['To'] = recipient
+        
+        part = MIMEText(html_content, 'html')
+        msg.attach(part)
+        
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
+            server.starttls()
+            server.login(MAIL_USERNAME, MAIL_PASSWORD)
+            server.send_message(msg)
+            
+        return True
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+        return False
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
+# Registrar Blueprint de autenticação
+app.register_blueprint(auth_bp, url_prefix='/')
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('Acesso restrito a administradores', 'error')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.context_processor
 def inject_year():
@@ -30,6 +91,7 @@ def home():
     return redirect(url_for("dashboard"))
 
 @app.route("/dashboard")
+@login_required
 def dashboard():
     conn = get_conn()
     cur = conn.cursor()
@@ -81,6 +143,7 @@ def dashboard():
     )
 
 @app.route("/index")
+@login_required
 def index():
     pneus = [i for i in ITENS_CARRO if "Pneu" in i or "Pneus" in i or "Estepe" in i]
     fluidos = [i for i in ITENS_CARRO if "Fluido" in i or "Óleo" in i]
@@ -97,6 +160,7 @@ def salvar():
         return redirect(url_for("index"))
 
 @app.route("/historico", methods=["GET", "POST"])
+@login_required
 def historico():
     resultados = []
     try:
@@ -112,6 +176,7 @@ def historico():
     return render_template("historico.html", resultados=resultados)
 
 @app.route("/detalhes/<int:veiculo_id>")
+@login_required
 def detalhes(veiculo_id):
     reg = obter_registro(veiculo_id)
     if not reg:
@@ -120,6 +185,7 @@ def detalhes(veiculo_id):
     return render_template("detalhes.html", reg=reg)
 
 @app.route("/pdf/<int:veiculo_id>")
+@login_required
 def pdf(veiculo_id):
     reg = obter_registro(veiculo_id)
     if not reg:
@@ -131,13 +197,13 @@ def pdf(veiculo_id):
     filename = f"checklist_{reg.get('placa','sem_placa')}_{(reg.get('data') or '').replace('/','-')}.pdf"
     return send_file(tmp.name, as_attachment=True, download_name=filename)
 
-# Serve uploads (anexos)
 @app.route("/uploads/<path:filename>")
 def uploads(filename):
     return send_from_directory(ANEXOS_DIR, filename, as_attachment=False)
 
 # API com busca e paginação e contagem otimizada para críticos
 @app.route("/api/veiculos")
+@login_required
 def api_veiculos():
     tipo = request.args.get("tipo")
     criticos = request.args.get("criticos")
@@ -250,7 +316,27 @@ def api_veiculos():
         rows = cur.fetchall()
 
     items = []
+    # calcula indicador de troca de óleo por item (com base em quilometragem atual e oleo_km)
+    def _to_int(val):
+        try:
+            s = str(val or "")
+            nums = ''.join(ch for ch in s if ch.isdigit())
+            return int(nums) if nums else None
+        except Exception:
+            return None
+
     for r in rows:
+        quil = _to_int(r['quilometragem']) if 'quilometragem' in r.keys() else None
+        oleo_km = _to_int(r['oleo_km']) if 'oleo_km' in r.keys() and r['oleo_km'] is not None else None
+        if quil is not None and oleo_km is not None:
+            diff = quil - oleo_km
+            oleo_alert = diff >= 6000
+            oleo_due_in = max(0, 6000 - diff)
+        else:
+            diff = None
+            oleo_alert = False
+            oleo_due_in = None
+
         items.append({
             "id": r["id"],
             "condutor": r["condutor"],
@@ -258,7 +344,12 @@ def api_veiculos():
             "modelo": r["modelo"],
             "data": r["data"],
             "quilometragem": r["quilometragem"],
-            "tipo": r["tipo"]
+            "tipo": r["tipo"],
+            "oleo_km": (r["oleo_km"] if 'oleo_km' in r.keys() else None),
+            "oleo_data": (r["oleo_data"] if 'oleo_data' in r.keys() else None),
+            "oleo_alert": oleo_alert,
+            "oleo_diff": diff,
+            "oleo_due_in": oleo_due_in
         })
 
     conn.close()
@@ -274,6 +365,7 @@ def api_veiculos():
 
 # Rota administrativa para limpar uploads órfãos
 @app.route("/admin/cleanup-uploads", methods=["GET"])
+@admin_required
 def cleanup_uploads():
     confirm = request.args.get("confirm") == "1"
     conn = get_conn()
@@ -309,5 +401,154 @@ def cleanup_uploads():
 
     return jsonify(result)
 
+# Rotas para manutenção de veículos
+@app.route("/manutencao")
+@login_required
+def manutencao():
+    """Lista todas as manutenções"""
+    manutencoes = Manutencao.get_all()
+    return render_template("manutencao/listar.html", manutencoes=manutencoes)
+
+@app.route("/manutencao/novo/<int:veiculo_id>", methods=["GET", "POST"])
+@login_required
+def nova_manutencao(veiculo_id):
+    """Adiciona uma nova manutenção para um veículo"""
+    from services import obter_registro
+    veiculo = obter_registro(veiculo_id)
+    
+    if not veiculo:
+        flash("Veículo não encontrado.", "error")
+        return redirect(url_for("historico"))
+    
+    if request.method == "POST":
+        try:
+            manutencao = Manutencao.create(
+                veiculo_id=veiculo_id,
+                nome_peca=request.form.get("nome_peca"),
+                data_manutencao=request.form.get("data_manutencao"),
+                quilometragem_atual=request.form.get("quilometragem_atual"),
+                vida_util_km=request.form.get("vida_util_km") or None,
+                proxima_manutencao_km=request.form.get("proxima_manutencao_km") or None,
+                valor_peca=request.form.get("valor_peca") or None,
+                mao_de_obra=request.form.get("mao_de_obra") or None,
+                observacoes=request.form.get("observacoes") or None
+            )
+            flash("Manutenção registrada com sucesso!", "success")
+            return redirect(url_for("manutencoes_veiculo", veiculo_id=veiculo_id))
+        except Exception as e:
+            flash(f"Erro ao registrar manutenção: {e}", "error")
+    
+    return render_template("manutencao/novo.html", veiculo=veiculo)
+
+@app.route("/manutencao/veiculo/<int:veiculo_id>")
+@login_required
+def manutencoes_veiculo(veiculo_id):
+    """Lista todas as manutenções de um veículo específico"""
+    from services import obter_registro
+    veiculo = obter_registro(veiculo_id)
+    
+    if not veiculo:
+        flash("Veículo não encontrado.", "error")
+        return redirect(url_for("historico"))
+    
+    manutencoes = Manutencao.get_by_veiculo(veiculo_id)
+    return render_template("manutencao/veiculo.html", veiculo=veiculo, manutencoes=manutencoes)
+
+@app.route("/manutencao/editar/<int:manutencao_id>", methods=["GET", "POST"])
+@login_required
+def editar_manutencao(manutencao_id):
+    """Edita uma manutenção existente"""
+    manutencao = Manutencao.get_by_id(manutencao_id)
+    
+    if not manutencao:
+        flash("Manutenção não encontrada.", "error")
+        return redirect(url_for("manutencao"))
+    
+    if request.method == "POST":
+        try:
+            manutencao.nome_peca = request.form.get("nome_peca")
+            manutencao.data_manutencao = request.form.get("data_manutencao")
+            manutencao.quilometragem_atual = request.form.get("quilometragem_atual")
+            manutencao.vida_util_km = request.form.get("vida_util_km") or None
+            manutencao.proxima_manutencao_km = request.form.get("proxima_manutencao_km") or None
+            manutencao.valor_peca = request.form.get("valor_peca") or None
+            manutencao.mao_de_obra = request.form.get("mao_de_obra") or None
+            manutencao.observacoes = request.form.get("observacoes") or None
+            
+            manutencao.update()
+            flash("Manutenção atualizada com sucesso!", "success")
+            return redirect(url_for("manutencoes_veiculo", veiculo_id=manutencao.veiculo_id))
+        except Exception as e:
+            flash(f"Erro ao atualizar manutenção: {e}", "error")
+    
+    return render_template("manutencao/editar.html", manutencao=manutencao)
+
+@app.route("/manutencao/excluir/<int:manutencao_id>", methods=["POST"])
+@login_required
+def excluir_manutencao(manutencao_id):
+    """Exclui uma manutenção"""
+    manutencao = Manutencao.get_by_id(manutencao_id)
+    
+    if not manutencao:
+        flash("Manutenção não encontrada.", "error")
+        return redirect(url_for("manutencao"))
+    
+    try:
+        veiculo_id = manutencao.veiculo_id
+        manutencao.delete()
+        flash("Manutenção excluída com sucesso!", "success")
+        return redirect(url_for("manutencoes_veiculo", veiculo_id=veiculo_id))
+    except Exception as e:
+        flash(f"Erro ao excluir manutenção: {e}", "error")
+        return redirect(url_for("manutencoes_veiculo", veiculo_id=manutencao.veiculo_id))
+
+def create_admin_user():
+    """Cria o usuário administrador padrão se não existir"""
+    admin = User.find_by_username("vip")
+    
+    if not admin:
+        try:
+            admin = User.create(
+                username="vip",
+                password="vip123",
+                email="vip@example.com",
+                is_admin=True
+            )
+            print("\n" + "="*60)
+            print("USUÁRIO ADMINISTRADOR CRIADO COM SUCESSO")
+            print("="*60)
+            print(f"Usuário: vip")
+            print(f"Senha: vip123")
+            print("\nIMPORTANTE: Altere esta senha após o primeiro login!")
+            print("="*60 + "\n")
+        except Exception as e:
+            print(f"Erro ao criar usuário administrador: {e}")
+    else:
+        print("Usuário administrador 'vip' já existe no banco de dados.")
+
 if __name__ == "__main__":
+    # Criar tabelas e usuário admin padrão se não existirem
+    with app.app_context():
+        conn = get_conn()
+        cur = conn.cursor()
+        
+        # Criar tabela de usuários se não existir
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                email TEXT,
+                is_admin BOOLEAN DEFAULT 0,
+                reset_token TEXT,
+                reset_token_expiration TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+        
+        # Criar usuário administrador padrão
+        create_admin_user()
+    
+    # Iniciar o servidor
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

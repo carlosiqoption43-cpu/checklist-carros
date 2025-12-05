@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5 col-xl-4">
+        <!-- Logo e Título -->
+        <div class="text-center mb-4">
+          <div class="mb-3">
+            <span class="brand-icon display-1">🚘</span>
+          </div>
+          <h1 class="h2 fw-bold mb-2">Checklist Veicular</h1>
+          <p class="text-muted">Sistema inteligente de gestão de frotas</p>
+        </div>
+        
+        <!-- Card de Login -->
+        <div class="card shadow-lg border-0">
+          <div class="card-body p-4 p-lg-5">
+            <div class="text-center mb-4">
+              <h2 class="h4 fw-semibold">Bem-vindo de volta</h2>
+              <p class="text-muted small">Faça login para acessar o sistema</p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('auth.login') }}">
+              <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+              
+              <div class="mb-4">
+                <label for="username" class="form-label fw-semibold">
+                  <i class="bi bi-person me-2"></i>Usuário
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-0">
+                    <i class="bi bi-person text-muted"></i>
+                  </span>
+                  <input type="text" class="form-control border-start-0" id="username" name="username" 
+                         required autofocus placeholder="Digite seu usuário">
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">
+                  <i class="bi bi-lock me-2"></i>Senha
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-0">
+                    <i class="bi bi-lock text-muted"></i>
+                  </span>
+                  <input type="password" class="form-control border-start-0" id="password" name="password" 
+                         required placeholder="Digite sua senha">
+                  <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-lg btn-gradient shadow">
+                  <i class="bi bi-box-arrow-in-right me-2"></i>Entrar no Sistema
+                </button>
+              </div>
+            </form>
+            
+            <!-- Informações Adicionais -->
+            <div class="text-center mt-4">
+              <div class="border-top pt-3">
+                <p class="text-muted small mb-0">
+                  <i class="bi bi-shield-check me-1"></i>
+                  Acesso seguro e criptografado
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center mt-4">
+          <p class="text-muted small">
+            © {{ current_year }} Checklist Veicular • Versão 1.0
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+  }
+  
+  .card {
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .brand-icon {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .input-group-text {
+    border-radius: 12px 0 0 12px;
+  }
+  
+  .form-control {
+    border-radius: 0 12px 12px 0;
+  }
+  
+  .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--primary-500);
+  }
+  
+  .btn-gradient {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  }
+  
+  .border-top {
+    border-color: #e2e8f0 !important;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const togglePassword = document.getElementById('togglePassword');
+  const passwordInput = document.getElementById('password');
+  
+  togglePassword.addEventListener('click', function() {
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    
+    const icon = this.querySelector('i');
+    icon.classList.toggle('bi-eye');
+    icon.classList.toggle('bi-eye-slash');
+  });
+});
+</script>
+{% endblock %}
